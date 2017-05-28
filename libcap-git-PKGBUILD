@@ -1,0 +1,42 @@
+#$Id: PKGBUILD 258876 2016-02-04 18:31:18Z anatolik $
+# Maintainer:  Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Allan McRae <allan@archlinux.org>
+# Contributor: Hugo Doria <hugo@archlinux.org>
+
+_pkgname=libcap
+pkgname=$_pkgname-git
+pkgver=libcap.korg.2.25.r4.8c67abc
+pkgrel=1
+pkgdesc='POSIX 1003.1e capabilities'
+arch=('i686' 'x86_64')
+url='http://sites.google.com/site/fullycapable/'
+license=('GPL2')
+depends=('glibc' 'attr')
+makedepends=('linux-api-headers')
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+# source=(https://kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-$pkgver.tar.xz)
+source=($_pkgname::git+https://git.kernel.org/pub/scm/linux/kernel/git/morgan/libcap.git)
+md5sums=('SKIP')
+
+pkgver() {
+	cd "$srcdir/$_pkgname"
+	printf "%s" "$(git describe --long | sed 's/\([^-]*-\)g/r\1/;s/-/./g')"
+}
+
+prepare() {
+  cd "$srcdir/$_pkgname"
+  sed -i "/SBINDIR/s#sbin#bin#" Make.Rules
+}
+
+build() {
+  make -C "$srcdir/$_pkgname" KERNEL_HEADERS=/usr/include BUILD_GPERF=no
+}
+
+package() {
+  cd "$srcdir/$_pkgname"
+  make prefix=/usr lib=/lib DESTDIR="$pkgdir" RAISE_SETFCAP=no install
+
+  install -Dm644 pam_cap/capability.conf \
+    "$pkgdir"/usr/share/doc/$pkgname/capability.conf.example
+}
